@@ -1,0 +1,18 @@
+# 统一行尾，避免 Windows/Linux 交叉编辑时把整个文件标记为改动
+* text=auto
+
+# 脚本与文档用 LF
+*.js text eol=lf
+*.mjs text eol=lf
+*.json text eol=lf
+*.yml text eol=lf
+*.md text eol=lf
+
+# .cmd 直接以 CRLF 存进仓库：用户是下载这个文件双击运行的，
+# 而 cmd.exe 解析 LF 结尾的批处理会出错（git 的 eol=crlf 只改工作区，
+# 仓库里仍是 LF，下载到的就是坏文件）。
+*.cmd -text
+
+# 压缩包是二进制，别动
+*.gz binary
+*.zstd binary

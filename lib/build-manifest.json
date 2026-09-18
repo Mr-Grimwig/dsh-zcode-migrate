@@ -1,0 +1,95 @@
+{
+  "name": "dsh-zcode-migrate",
+  "version": "1.0.0",
+  "modules": [
+    {
+      "path": "auto-import.js",
+      "bytes": 7764
+    },
+    {
+      "path": "commands.js",
+      "bytes": 15572
+    },
+    {
+      "path": "core/config.js",
+      "bytes": 6407
+    },
+    {
+      "path": "core/digest.js",
+      "bytes": 4454
+    },
+    {
+      "path": "core/harness-modules.js",
+      "bytes": 6199
+    },
+    {
+      "path": "core/import-lock.js",
+      "bytes": 4217
+    },
+    {
+      "path": "core/index.js",
+      "bytes": 662
+    },
+    {
+      "path": "core/warnings.js",
+      "bytes": 3183
+    },
+    {
+      "path": "index.js",
+      "bytes": 6169
+    },
+    {
+      "path": "migrate.js",
+      "bytes": 35268
+    },
+    {
+      "path": "source/legacy-source.js",
+      "bytes": 10972
+    },
+    {
+      "path": "source/model.js",
+      "bytes": 10744
+    },
+    {
+      "path": "source/rollout-source.js",
+      "bytes": 16740
+    },
+    {
+      "path": "source/sqlite-source.js",
+      "bytes": 12002
+    },
+    {
+      "path": "target/dsh-log-reader.js",
+      "bytes": 7018
+    },
+    {
+      "path": "target/registry.js",
+      "bytes": 5760
+    },
+    {
+      "path": "target/session-sink.js",
+      "bytes": 6617
+    },
+    {
+      "path": "target/workspace.js",
+      "bytes": 5463
+    },
+    {
+      "path": "transform/event-log.js",
+      "bytes": 4470
+    },
+    {
+      "path": "transform/plan.js",
+      "bytes": 32407
+    },
+    {
+      "path": "transform/validate.js",
+      "bytes": 11455
+    }
+  ],
+  "checks": {
+    "syntaxChecked": 21,
+    "importsVerified": 20,
+    "entryExempt": "src/index.js"
+  }
+}

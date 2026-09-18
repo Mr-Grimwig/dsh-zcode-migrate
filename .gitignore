@@ -1,0 +1,15 @@
+# 一键安装脚本被误解析时可能落下的临时文件
+!OC!
+
+# 迁移产生的运行期文件（每台机器不同，不进版本库）
+.tmp-fixture/
+.tmp-*/
+*.tmp-*
+
+# 编辑器 / 系统
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+node_modules/

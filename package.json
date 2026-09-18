@@ -1,0 +1,61 @@
+{
+  "name": "dsh-zcode-migrate",
+  "version": "1.0.0",
+  "description": "把 ZCode 本地的会话和思考过程迁移成 DSH 原生会话，迁移后可以接着聊；思路逐字搬运，不改写不摘要",
+  "private": true,
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": {
+      "default": "./lib/index.js"
+    },
+    "./core": {
+      "default": "./lib/core/index.js"
+    },
+    "./src/*": "./src/*",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE",
+    "docs"
+  ],
+  "engines": {
+    "node": ">=22.15.0"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node --test --test-reporter=spec \"test/*.test.mjs\"",
+    "verify": "npm run build && npm test",
+    "scan": "node scripts/cli.mjs scan",
+    "import": "node scripts/cli.mjs import",
+    "status": "node scripts/cli.mjs status",
+    "verify-fidelity": "node scripts/cli.mjs verify",
+    "install-profile": "node scripts/install-into-profile.mjs"
+  },
+  "keywords": [
+    "zcode",
+    "deepseek-harness",
+    "dsh",
+    "session-migration",
+    "reasoning"
+  ],
+  "license": "MIT",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Mr-Grimwig/dsh-zcode-migrate.git"
+  },
+  "homepage": "https://github.com/Mr-Grimwig/dsh-zcode-migrate#readme",
+  "bugs": {
+    "url": "https://github.com/Mr-Grimwig/dsh-zcode-migrate/issues"
+  },
+  "author": "Mr-Grimwig"
+}
