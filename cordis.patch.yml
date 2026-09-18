@@ -1,0 +1,39 @@
+# dsh-zcode-migrate 的插件层补丁。
+#
+# 包内声明了 dsh.bundle.patch，所以 `dsh plugin --profile <名字> add <本包>` 会自动
+# 把本插件加入该 profile 的 dsh.profile.bundles 并应用这个补丁，不需要把它复制到
+# 你自己的 cordis.patch.yml 里。两边都插同一个行 id 会让加载器报重复。
+#
+# 另外两种加载方式：
+#   dsh --patch <本仓库>/cordis.patch.yml          零安装试跑
+#   在 profile 的 cordis.patch.yml 里自己写一行      如果你想把配置收在自己的层里
+#
+# 下面 config 里的值是默认值，删掉某行就退回 schema 默认。想改某个值，在 profile
+# 自己的 cordis.patch.yml 里按 id 覆盖（这是覆盖，不是再插一行）：
+#
+#   - id: zcode-migrate
+#     config:
+#       autoImport: off
+
+- insert:
+    - id: zcode-migrate
+      name: 'dsh-zcode-migrate'
+      config:
+        # ZCode 数据目录。留空则依次看 $ZCODE_HOME、~/.zcode
+        # source: 'C:/Users/you/.zcode'
+        # auto：优先 SQLite，坏了就用 rollout；db / rollout 可指定只用其中一个
+        sourceMode: auto
+        # 是否也读 3.0 之前的 projects/**/*.jsonl
+        legacy: false
+        # 源会话的工作目录不存在时，是否自动创建。关闭时这类会话照样导入，
+        # 只是不会出现在侧边栏的工作区分组里
+        createMissingDirs: false
+        # pending：每次启动 DSH 自动补齐源侧新增内容；off：只在手动执行
+        # /zcode-import 时才动
+        autoImport: pending
+        # 注册表和报告的位置，默认 <DSH 主目录>/zcode-migrate
+        # stateDir: 'C:/Users/you/.dsh/zcode-migrate'
+        # 0 表示不限；填 N 时，不指定会话 ID 的运行只处理最近 N 个
+        maxSessions: 0
+        # 是否写报告
+        report: true
