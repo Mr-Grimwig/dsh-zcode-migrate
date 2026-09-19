@@ -678,7 +678,15 @@ export async function importSession(options) {
 }
 
 /**
- * Import many sessions with bounded concurrency, isolating per-session failures.
+ * Import many sessions in sequence, isolating per-session failures.
+ *
+ * One session that cannot be written — a full disk, a permission error, a
+ * backend refusal — must not stop the rest of the batch. The failure is recorded
+ * as that session's result and the run continues, because the alternative is
+ * worse than it looks: a batch of 247 sessions aborting at #3 leaves the user to
+ * work out which ones went through. Re-running stays safe either way (stable
+ * target ids and content prefixes make an import idempotent), but a run should
+ * finish and report, not stop.
  *
  * @param {object} options - `{ config, sessionIds, sink, registry, warn, force, workspaceRegistry, dryRun, onProgress }`.
  * @returns {Promise<{results: object[], registry: object, warnings: object[]}>} aggregated outcome.
@@ -692,18 +700,30 @@ export async function importMany(options) {
   try {
     for (const [index, sourceId] of sessionIds.entries()) {
       const sessionWarn = new WarningLog(sourceId);
-      const result = await importSession({
-        config,
-        sourceId,
-        sink,
-        registry,
-        force,
-        dryRun,
-        workspaceRegistry,
-        sourceFacade: facade.kind === 'legacy' ? undefined : facade,
-        warn: sessionWarn,
-      });
+      /** @type {object} */
+      let result;
+      try {
+        result = await importSession({
+          config,
+          sourceId,
+          sink,
+          registry,
+          force,
+          dryRun,
+          workspaceRegistry,
+          sourceFacade: facade.kind === 'legacy' ? undefined : facade,
+          warn: sessionWarn,
+        });
+      } catch (error) {
+        const message = /** @type {Error} */ (error)?.message ?? String(error);
+        sessionWarn.add('import-failed', `该会话导入失败，已跳过并继续其余会话：${message}`, {
+          sessionId: sourceId,
+          severity: SEVERITY.error,
+        });
+        result = { sourceId, status: 'failed', reason: 'import-threw', error: message };
+      }
       warn.items.push(...sessionWarn.items);
+      if (result.warnings === undefined) result.warnings = sessionWarn.toJSON();
       results.push(result);
       onProgress?.({ index: index + 1, total: sessionIds.length, result });
     }

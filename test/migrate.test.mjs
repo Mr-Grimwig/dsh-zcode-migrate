@@ -15,7 +15,7 @@ import { join } from 'node:path';
 import { after, before, describe, it } from 'node:test';
 
 import { WarningLog } from '../src/core/warnings.js';
-import { buildReport, importSession, reconcile, scan, splitTurns, verifyFidelity } from '../src/migrate.js';
+import { buildReport, importMany, importSession, reconcile, scan, splitTurns, verifyFidelity } from '../src/migrate.js';
 import { openZcodeDatabase, readSession } from '../src/source/sqlite-source.js';
 import { planSession } from '../src/transform/plan.js';
 import { createMemorySink } from '../src/target/session-sink.js';
@@ -629,6 +629,42 @@ describe('live sessions are left alone', () => {
     assert.equal(second.status, 'skipped');
     assert.equal(second.reason, 'already-imported');
     assert.equal(first.targetId, second.targetId);
+  });
+});
+
+describe('batch failure isolation', () => {
+  it('finishes the batch when one session cannot be written, and reports which one', async () => {
+    const sink = createMemorySink();
+    const append = sink.append.bind(sink);
+    let calls = 0;
+    sink.append = async (id, events) => {
+      calls += 1;
+      if (calls === 2) throw new Error('模拟磁盘写入失败');
+      return append(id, events);
+    };
+
+    const warn = new WarningLog();
+    // 同一个源的三次导入（force 出不同副本）代表三个会话；关键是第三个还会不会跑
+    const run = await importMany({
+      config: ctx.config,
+      sessionIds: [ctx.sessionId, ctx.sessionId, ctx.sessionId],
+      sink,
+      registry: { sessions: {} },
+      warn,
+      force: true,
+    });
+
+    assert.equal(run.results.length, 3, '整批不能在失败处停下');
+    assert.deepEqual(
+      run.results.map((result) => result.status),
+      ['imported', 'failed', 'imported'],
+    );
+    const failed = run.results[1];
+    assert.equal(failed.reason, 'import-threw');
+    assert.match(failed.error, /磁盘写入失败/);
+    const warning = failed.warnings.find((item) => item.code === 'import-failed');
+    assert.ok(warning, '失败要记在对应会话名下');
+    assert.match(warning.message, /已跳过并继续其余会话/);
   });
 });
 
