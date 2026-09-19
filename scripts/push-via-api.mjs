@@ -80,11 +80,19 @@ function commitFields() {
   const author = headers.find((line) => line.startsWith('author '));
   const committer = headers.find((line) => line.startsWith('committer '));
   if (author === undefined || committer === undefined) throw new Error('commit object has no author/committer header');
-  return { author: identity(author.slice('author '.length)), committer: identity(committer.slice('committer '.length)), message };
+  // Parents travel with the commit: without them the rebuilt commit is a root
+  // and its hash cannot match.
+  const parents = headers.filter((line) => line.startsWith('parent ')).map((line) => line.slice('parent '.length));
+  return {
+    author: identity(author.slice('author '.length)),
+    committer: identity(committer.slice('committer '.length)),
+    message,
+    parents,
+  };
 }
 
-const { author, committer, message } = commitFields();
-console.log(`本地提交 ${headSha.slice(0, 12)} tree=${treeSha.slice(0, 12)}`);
+const { author, committer, message, parents } = commitFields();
+console.log(`本地提交 ${headSha.slice(0, 12)} tree=${treeSha.slice(0, 12)} parents=${parents.length}`);
 console.log(`author=${author.name} <${author.email}> ${author.date}`);
 
 // `-z` matters: without it git quotes non-ASCII paths as octal escapes, and that
@@ -134,6 +142,7 @@ console.log(`tree 一致 ${tree.sha.slice(0, 12)}`);
 const commit = await api('POST', `/repos/${OWNER}/${REPO}/git/commits`, {
   message,
   tree: tree.sha,
+  parents,
   author,
   committer,
 });

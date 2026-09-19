@@ -86,12 +86,14 @@ describe('real DSH backend (FR-4.4)', { skip: available ? false : '未找到 DSH
     ctx.targetId = result.targetId;
 
     const written = artifact();
-    assert.ok(written.path.includes('session.jsonl.zstd'), 'the backend owns the artifact location');
+    // The file name embeds the format generation from v1 onward, so only the
+    // encoding suffix is stable.
+    assert.match(written.path, /session(\.v\d+)?\.jsonl\.zstd$/, 'the backend owns the artifact location');
 
     // 1. Read back with the plugin's own decoder.
     const decoded = readSessionArtifact(ctx.root, result.targetId);
     assert.ok(decoded, 'the artifact must be discoverable by session id');
-    assert.equal(decoded.header.version, 0);
+    assert.equal(decoded.header.version, ctx.backend.sink.formatVersion, "写出的日志版本跟随宿主");
     assert.equal(decoded.header.cwd, 'D:\\code\\fixture');
     assert.equal(decoded.malformed, 0);
 
@@ -99,9 +101,11 @@ describe('real DSH backend (FR-4.4)', { skip: available ? false : '未找到 DSH
     assert.equal(blocks.length, 3);
     assert.equal(blocks[0].text, TRICKY_REASONING, 'the 200k block survived the zstd trip unchanged');
 
-    // 2. Read back through the harness's own load(), which also enforces the
-    //    format and repair contracts.
-    const loaded = await ctx.backend.persistence.load(result.targetId);
+    // 2. Read back through the harness's own service, which also enforces the
+    //    format and repair contracts. The sink is the generation-agnostic door
+    //    to it (v0 reads via inspect/load, v3 via an open handle).
+    const loaded = await ctx.backend.sink.inspect(result.targetId);
+    assert.ok(loaded, 'the harness must be able to read back what was written');
     assert.equal(loaded.events.length, decoded.events.length);
     const viaHarness = reasoningBlocksOf([...loaded.events]);
     assert.deepEqual(
@@ -282,7 +286,9 @@ describe('memory sink parity', { skip: available ? false : '未找到 DSH 运行
       const fixture = createFixture({ dir });
       fixture.close();
       const config = normalizeConfig({ source: dir, stateDir: join(dir, 'state') });
-      const memory = createMemorySink();
+      // Same target format as the backend, so the comparison is about the sink
+      // abstraction and not about which log generation each one writes.
+      const memory = createMemorySink({ formatVersion: backend.sink.formatVersion });
       const options = { config, sourceId: fixture.sessionId, warn: new WarningLog(fixture.sessionId) };
 
       const viaMemory = await importSession({ ...options, sink: memory, registry: { sessions: {} } });

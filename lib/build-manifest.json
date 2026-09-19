@@ -40,7 +40,7 @@
     },
     {
       "path": "migrate.js",
-      "bytes": 35268
+      "bytes": 35569
     },
     {
       "path": "source/legacy-source.js",
@@ -60,7 +60,7 @@
     },
     {
       "path": "target/dsh-log-reader.js",
-      "bytes": 7018
+      "bytes": 8757
     },
     {
       "path": "target/registry.js",
@@ -68,7 +68,7 @@
     },
     {
       "path": "target/session-sink.js",
-      "bytes": 6617
+      "bytes": 10044
     },
     {
       "path": "target/workspace.js",
@@ -76,11 +76,11 @@
     },
     {
       "path": "transform/event-log.js",
-      "bytes": 4470
+      "bytes": 5452
     },
     {
       "path": "transform/plan.js",
-      "bytes": 32407
+      "bytes": 35115
     },
     {
       "path": "transform/validate.js",

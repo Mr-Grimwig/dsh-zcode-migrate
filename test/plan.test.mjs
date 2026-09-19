@@ -261,6 +261,62 @@ describe('determinism (FR-3.2, FR-6.1)', () => {
   });
 });
 
+describe('newer log format (v3)', () => {
+  /** Plan the fixture for the newest format. */
+  const planV3 = () => planSession(context.session, { warn: new WarningLog(), formatVersion: 3 });
+
+  it('declares isSeeded instead of the older seedLength', () => {
+    const plan = planV3();
+    assert.equal(plan.header.version, 3);
+    assert.equal(plan.header.isSeeded, false);
+    assert.equal('seedLength' in plan.header, false, 'v3 rejects a header carrying the old field');
+  });
+
+  it('gives every assistant message the stream its content came from', () => {
+    const messages = planV3().events.filter((event) => event.type === 'assistant/message');
+    assert.ok(messages.length > 0);
+    for (const event of messages) {
+      const stream = event.data.stream;
+      assert.ok(Array.isArray(stream), 'v3 requires the field, so a missing one would be refused at write time');
+      const described = new Set(stream.map((record) => record.index));
+      event.data.message.content.forEach((block, index) => {
+        if (block.type === 'reasoning' || block.type === 'text' || block.type === 'tool-call') {
+          assert.ok(described.has(index), `block ${index} (${block.type}) has no stream record`);
+        }
+      });
+    }
+  });
+
+  it('states each migrated block as a single delta, which is what happened', () => {
+    const first = planV3().events.find((event) => event.type === 'assistant/message');
+    const reasoning = first.data.stream.find((record) => record.type === 'reasoning-chunks');
+    assert.equal(reasoning.texts.length, 1);
+    assert.deepEqual(reasoning.dt, [], 'one member needs no gaps');
+    assert.equal(reasoning.texts[0], first.data.message.content.find((block) => block.type === 'reasoning').text);
+  });
+
+  it('keeps the tool-call stream aligned with the tool-call block', () => {
+    const first = planV3().events.find((event) => event.type === 'assistant/message');
+    const call = first.data.stream.find((record) => record.type === 'tool-call-chunks');
+    const block = first.data.message.content.find((candidate) => candidate.type === 'tool-call');
+    assert.equal(call.id, block.id);
+    assert.equal(call.name, block.name);
+    assert.deepEqual(call.args, [block.arguments]);
+  });
+
+  it('still validates structurally', () => {
+    assert.equal(validateEventLog(planV3().events).ok, true);
+  });
+
+  it('produces a different content than the older format, and the older one stays available', () => {
+    const legacy = planSession(context.session, { warn: new WarningLog(), formatVersion: 0 });
+    assert.equal(legacy.header.version, 0);
+    assert.equal('isSeeded' in legacy.header, false);
+    const legacyMessage = legacy.events.find((event) => event.type === 'assistant/message');
+    assert.equal('stream' in legacyMessage.data, false, 'v0 has no such field');
+  });
+});
+
 describe('maximum-tokens and empty-step handling', () => {
   it('maps a length finish to max-tokens and keeps a content-less step as a step', () => {
     const dir = mkdtempSync(join(tmpdir(), 'zcm-plan2-'));

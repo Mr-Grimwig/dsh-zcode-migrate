@@ -96,7 +96,7 @@ describe('first import (FR-4.1, FR-5.1)', () => {
     assert.equal(sink.sessions.size, 1);
 
     const stored = sink.sessions.get(result.targetId);
-    assert.equal(stored.header.version, 0);
+    assert.equal(stored.header.version, sink.formatVersion, "写出的日志版本跟随宿主");
     assert.equal(stored.header.cwd, 'D:\\code\\fixture');
     assert.equal(stored.events.length, result.eventCount);
     assert.ok(registry.sessions[ctx.sessionId], 'the registry records where this session went');

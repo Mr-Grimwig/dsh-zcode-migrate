@@ -29,7 +29,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { SEVERITY, WarningLog } from './core/warnings.js';
 import { sha256, shortHash, stableStringify, targetSessionId } from './core/digest.js';
-import { planSession } from './transform/plan.js';
+import { LEGACY_SESSION_FORMAT_VERSION, planSession } from './transform/plan.js';
 import { validateEventLog } from './transform/validate.js';
 import { restampSeq } from './target/session-sink.js';
 import { reasoningBlocksOf } from './target/dsh-log-reader.js';
@@ -504,7 +504,10 @@ export async function importSession(options) {
   }
 
   const record = getRecord(registry, sourceId);
-  const planned = planSession(session, { warn });
+  // The target backend decides the log format, so the plan is generated for
+  // whichever generation the harness in front of us reads.
+  const formatVersion = options.formatVersion ?? sink?.formatVersion ?? LEGACY_SESSION_FORMAT_VERSION;
+  const planned = planSession(session, { warn, formatVersion });
   const verdict = validateEventLog(planned.events);
   if (!verdict.ok) {
     warn.add('event-log-invalid', `生成的事件流未通过结构校验，已中止该会话的导入：${verdict.errors.slice(0, 3).join('；')}`, {
@@ -523,7 +526,7 @@ export async function importSession(options) {
   // A forced re-import goes to a *new* target, so the existing session is never
   // rewritten (FR-6.3). The variant keeps the id stable for that content.
   const variant = force ? shortHash(`${planned.digests.content}:${Date.now()}` , 12) : '';
-  const plan = force ? planSession(session, { warn, variant }) : planned;
+  const plan = force ? planSession(session, { warn, variant, formatVersion }) : planned;
   const targetId = plan.targetId;
 
   // A session that is *live* in this DSH process owns an in-memory cursor.
